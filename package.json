@@ -3,7 +3,6 @@
   "version": "1.0.2",
   "description": "A grid with spring-physics based animation",
   "main": "lib/index.js",
-  "browser": "lib/index.umd.js",
   "module": "lib/index.es.js",
   "files": [
     "/lib"
