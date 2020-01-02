@@ -1,7 +1,7 @@
 {
   "name": "react-igrid",
   "version": "1.0.0",
-  "description": "",
+  "description": "A grid with spring-physics based animation",
   "main": "lib/index.js",
   "browser": "lib/index.umd.js",
   "module": "lib/index.es.js",
@@ -13,9 +13,21 @@
     "prepublishOnly": "rm -rf lib && npm run build",
     "postbuild": "npm pack && tar -xvzf *.tgz && rm -rf package *.tgz"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "react",
+    "react-spring",
+    "animated"
+  ],
+  "author": "jyunhanlin",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jyunhanlin/react-igrid.git"
+  },
+  "peerDependencies": {
+    "react": ">= 16.8.0",
+    "react-dom": ">= 16.8.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.7.7",
     "@babel/preset-env": "^7.7.7",
@@ -24,14 +36,17 @@
     "@emotion/styled": "^10.0.27",
     "babel-loader": "^8.0.6",
     "babel-plugin-emotion": "^10.0.27",
+    "body-scroll-lock": "^2.6.4",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
+    "react-spring": "^8.0.27",
+    "react-use-gesture": "^6.0.14",
+    "rematrix": "^0.4.1",
     "rollup": "^1.27.14",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-peer-deps-external": "^2.2.0",
-    "rollup-plugin-terser": "^5.1.3",
-    "rollup-plugin-uglify": "^6.0.4"
+    "rollup-plugin-terser": "^5.1.3"
   }
 }
