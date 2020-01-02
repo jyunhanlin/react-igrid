@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/core';
 import { animated, useSpring, interpolate } from 'react-spring';
@@ -14,7 +14,7 @@ import {
   projection,
   rangeMap,
   clampedRangeMap,
-} from '../utils/utilities'
+} from '../utils/utilities';
 
 const defaultSpringSettings = {
   y: 0,
@@ -153,11 +153,11 @@ function Grid({ handleContainerScroll }) {
     opacity: 0,
   }));
 
-  const set = args => {
+  const set = useCallback(args => {
     if (args.y !== undefined) setY(args);
     if (args.x !== undefined) setX(args);
     if (args.scaleX !== undefined) setScale(args);
-  };
+  });
 
   const gridRef = useRef();
 
@@ -280,7 +280,7 @@ function Grid({ handleContainerScroll }) {
         );
       });
     }
-  }, [isClick]);
+  }, [isClick, set, setBackdropSpring]);
 
   return (
     <GridWrapper>
