@@ -4,7 +4,7 @@ import styled from '@emotion/styled';
 import { css } from '@emotion/core';
 import { animated, useSpring, interpolate } from 'react-spring';
 import { useDrag } from 'react-use-gesture';
-import * as Rematrix from 'rematrix';
+import { fromString, translateX, translateY, scaleX, scaleY, multiply } from 'rematrix';
 
 import useVelocityTrackedSpring from '../hooks/useVelocityTrackedSpring';
 import useWindowSize from '../hooks/useWindowSize';
@@ -112,25 +112,25 @@ const Backdrop = styled.div`
 
 const resetTransform = (el, positions) => {
   // cache the current transform for interruptible animations
-  const startTransform = Rematrix.fromString(el.style.transform);
+  const startTransform = fromString(el.style.transform);
   // we need to figure out what the "real" final state is without any residual transform from an interrupted animation
   el.style.transform = '';
 
   const { before, after } = positions;
-  const scaleX = before.width / after.width;
-  const scaleY = before.height / after.height;
-  const x = before.left - after.left;
-  const y = before.top - after.top;
+  const newScaleX = before.width / after.width;
+  const newScaleY = before.height / after.height;
+  const newX = before.left - after.left;
+  const newY = before.top - after.top;
 
   const transformsArray = [
     startTransform,
-    Rematrix.translateX(x),
-    Rematrix.translateY(y),
-    Rematrix.scaleX(scaleX),
-    Rematrix.scaleY(scaleY),
+    translateX(newX),
+    translateY(newY),
+    scaleX(newScaleX),
+    scaleY(newScaleY),
   ];
 
-  const matrix = transformsArray.reduce(Rematrix.multiply);
+  const matrix = transformsArray.reduce(multiply);
 
   const diff = {
     x: matrix[12],
