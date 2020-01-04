@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/core';
@@ -48,23 +49,33 @@ const GridContent = styled.div`
   transform-origin: 0 0;
   position: relative;
   touch-action: manipulation;
-  ${props =>
-    props.isSelected
+  ${({
+    initialWidth,
+    initialHeight,
+    initialColor,
+    finalHeight,
+    finalTop,
+    finalLeft,
+    finalRight,
+    finalColor,
+    isSelected,
+  }) =>
+    isSelected
       ? css`
-          height: calc(100vh - calc(${props.height / 2}px - 75vw));
           position: fixed;
-          top: calc(${props.height / 2}px - 75vw);
-          left: 0;
-          right: 0;
+          height: ${finalHeight};
+          top: ${finalTop};
+          left: ${finalLeft};
+          right: ${finalRight};
           touch-action: none;
           z-index: 15;
-          background-color: lightblue;
+          background-color: ${finalColor};
           border-radius: 5px 5px 0 0;
         `
       : css`
-          width: calc(100vw / 3);
-          height: calc(23.33vw - 0.666rem);
-          background-color: rgba(255, 255, 255, 0.8);
+          width: ${initialWidth};
+          height: ${initialHeight};
+          background-color: ${initialColor};
           border-radius: 5px;
         `}
 `;
@@ -132,7 +143,22 @@ const resetTransform = (el, positions) => {
   return diff;
 };
 
-function Grid({ handleContainerScroll }) {
+function Grid({
+  initialWidth = 'calc(100vw / 3)',
+  initialHeight = 'calc(23.33vw - 0.666rem)',
+  initialColor = 'rgba(255, 255, 255, 0.8)',
+  finalHeight = 'calc(100vh - 10%)',
+  finalTop = '10%',
+  finalLeft = 0,
+  finalRight = 0,
+  finalColor = 'lightblue',
+  title = 'test',
+  excerpt = '1234',
+  image,
+  children,
+  lockContainerScroll = () => {},
+  unlockContainerScroll = () => {},
+}) {
   const { width, height } = useWindowSize();
   const [isClick, setIsClick] = useState(false);
 
@@ -157,7 +183,7 @@ function Grid({ handleContainerScroll }) {
     if (args.y !== undefined) setY(args);
     if (args.x !== undefined) setX(args);
     if (args.scaleX !== undefined) setScale(args);
-  });
+  }, []);
 
   const gridRef = useRef();
 
@@ -169,7 +195,7 @@ function Grid({ handleContainerScroll }) {
   const dragUnselected = ({ last, movement }) => {
     if (last && Math.abs(movement[0]) + Math.abs(movement[1]) < 2) {
       gridPositions.current.before = gridRef.current.getBoundingClientRect();
-      if (handleContainerScroll) handleContainerScroll(false);
+      lockContainerScroll();
       setIsClick(true);
     }
   };
@@ -195,7 +221,7 @@ function Grid({ handleContainerScroll }) {
             if (Math.abs(y.lastVelocity) < 1000) {
               gridPositions.current.after = gridPositions.current.before;
               gridPositions.current.before = gridRef.current.getBoundingClientRect();
-              if (handleContainerScroll) handleContainerScroll(true);
+              unlockContainerScroll();
               setIsClick(false);
               set({
                 onFrame: null,
@@ -247,7 +273,7 @@ function Grid({ handleContainerScroll }) {
   const onBackdropHandler = () => {
     gridPositions.current.after = gridPositions.current.before;
     gridPositions.current.before = gridRef.current.getBoundingClientRect();
-    if (handleContainerScroll) handleContainerScroll(true);
+    unlockContainerScroll();
     setIsClick(false);
   };
 
@@ -289,6 +315,14 @@ function Grid({ handleContainerScroll }) {
         ref={gridRef}
         height={height}
         isSelected={isClick}
+        initialWidth={initialWidth}
+        initialHeight={initialHeight}
+        initialColor={initialColor}
+        finalHeight={finalHeight}
+        finalTop={finalTop}
+        finalLeft={finalLeft}
+        finalRight={finalRight}
+        finalColor={finalColor}
         onTouchStart={bindUnselect().onTouchStart}
         style={{
           transform: interpolate(
@@ -298,9 +332,15 @@ function Grid({ handleContainerScroll }) {
           ),
         }}
       >
-        {isClick ? <GridHeader onTouchStart={bindSelect().onTouchStart} /> : null}
-        <GridTitle>test</GridTitle>
-        <GridDescription>1234</GridDescription>
+        {isClick ? <GridHeader onTouchStart={bindSelect().onTouchStart}>{title}</GridHeader> : null}
+        {image && <img src={image} alt="preview" />}
+        {!isClick ? (
+          <>
+            <GridTitle>{title}</GridTitle>
+            <GridDescription>{excerpt}</GridDescription>
+          </>
+        ) : null}
+        {isClick ? children : null}
       </GridContent>
       <Backdrop
         as={animated.div}
