@@ -1,3 +1,4 @@
+import { fromString, translateX, translateY, scaleX, scaleY, multiply } from 'rematrix';
 // percent should be between 0 and 1
 export const range = (start, end, percent) => (end - start) * percent + start;
 
@@ -62,4 +63,37 @@ export const findNearestNumberInArray = (n, arr) => {
     }
   }
   return false;
+};
+
+export const resetTransform = (el, positions) => {
+  // cache the current transform for interruptible animations
+  const startTransform = fromString(el.style.transform);
+  // we need to figure out what the "real" final state is without any residual transform from an interrupted animation
+  el.style.transform = '';
+
+  const { before, after } = positions;
+  const newScaleX = before.width / after.width;
+  const newScaleY = before.height / after.height;
+  const newX = before.left - after.left;
+  const newY = before.top - after.top;
+
+  const transformsArray = [
+    startTransform,
+    translateX(newX),
+    translateY(newY),
+    scaleX(newScaleX),
+    scaleY(newScaleY),
+  ];
+
+  const matrix = transformsArray.reduce(multiply);
+
+  const diff = {
+    x: matrix[12],
+    y: matrix[13],
+    scaleX: matrix[0],
+    scaleY: matrix[5],
+  };
+  // immediately apply new styles before the next frame
+  el.style.transform = `translate(${diff.x}px, ${diff.y}px) scaleX(${diff.scaleX}) scaleY(${diff.scaleY})`;
+  return diff;
 };

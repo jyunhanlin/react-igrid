@@ -1,21 +1,20 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
-import styled from '@emotion/styled';
-import { css } from '@emotion/core';
 import { animated, useSpring, interpolate } from 'react-spring';
 import { useDrag } from 'react-use-gesture';
-import { fromString, translateX, translateY, scaleX, scaleY, multiply } from 'rematrix';
 
-import useVelocityTrackedSpring from '../hooks/useVelocityTrackedSpring';
-import useWindowSize from '../hooks/useWindowSize';
-
+import useVelocityTrackedSpring from './useVelocityTrackedSpring';
+import useWindowSize from './useWindowSize';
 import {
   rubberBandIfOutOfBounds,
   findNearestNumberInArray,
   projection,
   rangeMap,
   clampedRangeMap,
-} from '../utils/utilities';
+  resetTransform,
+} from './utilities';
+
+import * as styles from './styles';
 
 const defaultSpringSettings = {
   y: 0,
@@ -39,110 +38,6 @@ const yStops = [0, maxYTranslate];
 const xStops = [-20, 20];
 const scaleStops = [1, 0.75];
 
-const GridWrapper = styled.div`
-  margin: 1rem 0;
-  width: calc(100vw / 3);
-  height: calc(23.33vw - 0.666rem);
-`;
-
-const GridContent = styled.div`
-  transform-origin: 0 0;
-  position: relative;
-  touch-action: manipulation;
-  ${({
-    initialWidth,
-    initialHeight,
-    initialColor,
-    finalHeight,
-    finalTop,
-    finalLeft,
-    finalRight,
-    finalColor,
-    isSelected,
-  }) =>
-    isSelected
-      ? css`
-          position: fixed;
-          height: ${finalHeight};
-          top: ${finalTop};
-          left: ${finalLeft};
-          right: ${finalRight};
-          touch-action: none;
-          z-index: 15;
-          background-color: ${finalColor};
-          border-radius: 5px 5px 0 0;
-        `
-      : css`
-          width: ${initialWidth};
-          height: ${initialHeight};
-          background-color: ${initialColor};
-          border-radius: 5px;
-        `}
-`;
-
-const GridHeader = styled.div`
-  background-color: lightcyan;
-  padding: 1.5rem;
-  border-radius: 5px 5px 0 0;
-`;
-
-const GridTitle = styled.div`
-  padding: 0.5rem;
-  font-size: 1.2rem;
-`;
-
-const GridDescription = styled.div`
-  padding: 0.5rem;
-  font-size: 0.8rem;
-  color: #999;
-  overflow: auto;
-`;
-
-const Backdrop = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  ${props => (props.backgroundPointerEvents ? 'pointer-events:none;' : 'pointer-events:all;')};
-  background-color: white;
-  z-index: 12;
-  will-change: opacity;
-`;
-
-const resetTransform = (el, positions) => {
-  // cache the current transform for interruptible animations
-  const startTransform = fromString(el.style.transform);
-  // we need to figure out what the "real" final state is without any residual transform from an interrupted animation
-  el.style.transform = '';
-
-  const { before, after } = positions;
-  const newScaleX = before.width / after.width;
-  const newScaleY = before.height / after.height;
-  const newX = before.left - after.left;
-  const newY = before.top - after.top;
-
-  const transformsArray = [
-    startTransform,
-    translateX(newX),
-    translateY(newY),
-    scaleX(newScaleX),
-    scaleY(newScaleY),
-  ];
-
-  const matrix = transformsArray.reduce(multiply);
-
-  const diff = {
-    x: matrix[12],
-    y: matrix[13],
-    scaleX: matrix[0],
-    scaleY: matrix[5],
-  };
-  // immediately apply new styles before the next frame
-  el.style.transform = `translate(${diff.x}px, ${diff.y}px) scaleX(${diff.scaleX}) scaleY(${diff.scaleY})`;
-  return diff;
-};
-
 function Grid({
   initialWidth = 'calc(100vw / 3)',
   initialHeight = 'calc(23.33vw - 0.666rem)',
@@ -159,7 +54,7 @@ function Grid({
   lockContainerScroll = () => {},
   unlockContainerScroll = () => {},
 }) {
-  const { width, height } = useWindowSize();
+  const { width } = useWindowSize();
   const [isClick, setIsClick] = useState(false);
 
   const [{ y }, setY] = useVelocityTrackedSpring(() => ({
@@ -309,22 +204,23 @@ function Grid({
   }, [isClick, set, setBackdropSpring]);
 
   return (
-    <GridWrapper>
-      <GridContent
-        as={animated.div}
+    <div style={styles.wrapperStyle()}>
+      <animated.div
         ref={gridRef}
-        height={height}
-        isSelected={isClick}
-        initialWidth={initialWidth}
-        initialHeight={initialHeight}
-        initialColor={initialColor}
-        finalHeight={finalHeight}
-        finalTop={finalTop}
-        finalLeft={finalLeft}
-        finalRight={finalRight}
-        finalColor={finalColor}
         onTouchStart={bindUnselect().onTouchStart}
         style={{
+          ...styles.contentStyle({
+            isClick,
+            initialWidth,
+            initialHeight,
+            initialColor,
+            finalHeight,
+            finalTop,
+            finalLeft,
+            finalRight,
+            finalColor,
+          }),
+
           transform: interpolate(
             [x, y, scaleX, scaleY],
             (interX, interY, interScaleX, interScaleY) =>
@@ -332,23 +228,28 @@ function Grid({
           ),
         }}
       >
-        {isClick ? <GridHeader onTouchStart={bindSelect().onTouchStart}>{title}</GridHeader> : null}
+        {isClick ? (
+          <div style={styles.finalHeaderStyle()} onTouchStart={bindSelect().onTouchStart}>
+            {title}
+          </div>
+        ) : null}
         {image && <img src={image} alt="preview" />}
         {!isClick ? (
           <>
-            <GridTitle>{title}</GridTitle>
-            <GridDescription>{excerpt}</GridDescription>
+            <div style={styles.titleStyle()}>{title}</div>
+            <div style={styles.excerptStyle()}>{excerpt}</div>
           </>
         ) : null}
         {isClick ? children : null}
-      </GridContent>
-      <Backdrop
-        as={animated.div}
-        backgroundPointerEvents={!isClick}
-        style={backdropSpring}
+      </animated.div>
+      <animated.div
+        style={{
+          ...styles.backdropStyle(isClick),
+          ...backdropSpring,
+        }}
         onClick={onBackdropHandler}
       />
-    </GridWrapper>
+    </div>
   );
 }
 
